@@ -101,6 +101,7 @@ module.exports = function (User) {
 			User.notifications.sendWelcomeNotification(userData.uid),
 			storePassword(userData.uid, data.password),
 			User.updateDigestSetting(userData.uid, meta.config.dailyDigestFreq),
+			groups.join('free-role', userData.uid),  
 		]);
 
 		if (data.email && isFirstUser) {

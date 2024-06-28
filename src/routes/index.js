@@ -13,6 +13,8 @@ const plugins = require('../plugins');
 const authRoutes = require('./authentication');
 const writeRoutes = require('./write');
 const helpers = require('./helpers');
+const paymentRoutes = require('./paymentRoutes'); // Add this line
+
 
 const { setupPageRoute } = helpers;
 
@@ -148,55 +150,58 @@ module.exports = async function (app, middleware) {
 
 	winston.info('[router] Routes added');
 };
-
 function addCoreRoutes(app, router, middleware, mounts) {
-	_mounts.meta(router, middleware, controllers);
-	_mounts.api(router, middleware, controllers);
-	_mounts.feed(router, middleware, controllers);
+    _mounts.meta(router, middleware, controllers);
+    _mounts.api(router, middleware, controllers);
+    _mounts.feed(router, middleware, controllers);
 
-	_mounts.main(router, middleware, controllers);
-	_mounts.mod(router, middleware, controllers);
-	_mounts.globalMod(router, middleware, controllers);
+    _mounts.main(router, middleware, controllers);
+    _mounts.mod(router, middleware, controllers);
+    _mounts.globalMod(router, middleware, controllers);
 
-	addRemountableRoutes(app, router, middleware, mounts);
+    addRemountableRoutes(app, router, middleware, mounts);
 
-	const relativePath = nconf.get('relative_path');
-	app.use(relativePath || '/', router);
+    const relativePath = nconf.get('relative_path');
+    app.use(relativePath || '/', router);
 
-	if (process.env.NODE_ENV === 'development') {
-		require('./debug')(app, middleware, controllers);
-	}
+    // Add payment routes here
+    const paymentRoutes = require('./paymentRoutes');
+    app.use(`${relativePath}/payment`, paymentRoutes);
 
-	app.use(middleware.privateUploads);
+    if (process.env.NODE_ENV === 'development') {
+        require('./debug')(app, middleware, controllers);
+    }
 
-	const statics = [
-		{ route: '/assets', path: path.join(__dirname, '../../build/public') },
-		{ route: '/assets', path: path.join(__dirname, '../../public') },
-	];
-	const staticOptions = {
-		maxAge: app.enabled('cache') ? 5184000000 : 0,
-	};
+    app.use(middleware.privateUploads);
 
-	if (path.resolve(__dirname, '../../public/uploads') !== nconf.get('upload_path')) {
-		statics.unshift({ route: '/assets/uploads', path: nconf.get('upload_path') });
-	}
+    const statics = [
+        { route: '/assets', path: path.join(__dirname, '../../build/public') },
+        { route: '/assets', path: path.join(__dirname, '../../public') },
+    ];
+    const staticOptions = {
+        maxAge: app.enabled('cache') ? 5184000000 : 0,
+    };
 
-	statics.forEach((obj) => {
-		app.use(relativePath + obj.route, middleware.addUploadHeaders, express.static(obj.path, staticOptions));
-	});
-	app.use(`${relativePath}/uploads`, (req, res) => {
-		res.redirect(`${relativePath}/assets/uploads${req.path}?${meta.config['cache-buster']}`);
-	});
-	app.use(`${relativePath}/plugins`, (req, res) => {
-		res.redirect(`${relativePath}/assets/plugins${req.path}${req._parsedUrl.search || ''}`);
-	});
+    if (path.resolve(__dirname, '../../public/uploads') !== nconf.get('upload_path')) {
+        statics.unshift({ route: '/assets/uploads', path: nconf.get('upload_path') });
+    }
 
-	app.use(`${relativePath}/assets/client-*.css`, middleware.buildSkinAsset);
-	app.use(`${relativePath}/assets/client-*-rtl.css`, middleware.buildSkinAsset);
+    statics.forEach((obj) => {
+        app.use(relativePath + obj.route, middleware.addUploadHeaders, express.static(obj.path, staticOptions));
+    });
+    app.use(`${relativePath}/uploads`, (req, res) => {
+        res.redirect(`${relativePath}/assets/uploads${req.path}?${meta.config['cache-buster']}`);
+    });
+    app.use(`${relativePath}/plugins`, (req, res) => {
+        res.redirect(`${relativePath}/assets/plugins${req.path}${req._parsedUrl.search || ''}`);
+    });
 
-	app.use(controllers['404'].handle404);
-	app.use(controllers.errors.handleURIErrors);
-	app.use(controllers.errors.handleErrors);
+    app.use(`${relativePath}/assets/client-*.css`, middleware.buildSkinAsset);
+    app.use(`${relativePath}/assets/client-*-rtl.css`, middleware.buildSkinAsset);
+
+    app.use(controllers['404'].handle404);
+    app.use(controllers.errors.handleURIErrors);
+    app.use(controllers.errors.handleErrors);
 }
 
 function addRemountableRoutes(app, router, middleware, mounts) {

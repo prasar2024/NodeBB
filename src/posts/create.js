@@ -12,83 +12,95 @@ const groups = require('../groups');
 const privileges = require('../privileges');
 
 module.exports = function (Posts) {
-	Posts.create = async function (data) {
-		// This is an internal method, consider using Topics.reply instead
-		const { uid } = data;
-		const { tid } = data;
-		const content = data.content.toString();
-		const timestamp = data.timestamp || Date.now();
-		const isMain = data.isMain || false;
+    Posts.create = async function (data) {
 
-		if (!uid && parseInt(uid, 10) !== 0) {
-			throw new Error('[[error:invalid-uid]]');
-		}
+        const { uid } = data;
+        const { tid } = data;
+        const content = data.content.toString();
+        const timestamp = data.timestamp || Date.now();
+        const isMain = data.isMain || false;
 
-		if (data.toPid) {
-			await checkToPid(data.toPid, uid);
-		}
+        if (!uid && parseInt(uid, 10) !== 0) {
+            throw new Error('[[error:invalid-uid]]');
+        }
 
-		const pid = await db.incrObjectField('global', 'nextPid');
-		let postData = {
-			pid: pid,
-			uid: uid,
-			tid: tid,
-			content: content,
-			timestamp: timestamp,
-		};
+        if (data.toPid) {
+            await checkToPid(data.toPid, uid);
+        }
 
-		if (data.toPid) {
-			postData.toPid = data.toPid;
-		}
-		if (data.ip && meta.config.trackIpPerPost) {
-			postData.ip = data.ip;
-		}
-		if (data.handle && !parseInt(uid, 10)) {
-			postData.handle = data.handle;
-		}
+        const isFreeRole = await groups.isMember(uid, 'free-role');
+        if (isFreeRole) {
+            const currentMonth = new Date().getMonth();
+            const userPostCountKey = `user:${uid}:postcount:month:${currentMonth}`;
+            
+            const postCount = await db.getObjectField(userPostCountKey, 'count') || 0;
+            if (postCount >= 5) {
+                throw new Error('[[error:post-limit-reached]]');
+            }
+            await db.incrObjectFieldBy(userPostCountKey, 'count', 1);
+        }
 
-		let result = await plugins.hooks.fire('filter:post.create', { post: postData, data: data });
-		postData = result.post;
-		await db.setObject(`post:${postData.pid}`, postData);
+        const pid = await db.incrObjectField('global', 'nextPid');
+        let postData = {
+            pid: pid,
+            uid: uid,
+            tid: tid,
+            content: content,
+            timestamp: timestamp,
+        };
 
-		const topicData = await topics.getTopicFields(tid, ['cid', 'pinned']);
-		postData.cid = topicData.cid;
+        if (data.toPid) {
+            postData.toPid = data.toPid;
+        }
+        if (data.ip && meta.config.trackIpPerPost) {
+            postData.ip = data.ip;
+        }
+        if (data.handle && !parseInt(uid, 10)) {
+            postData.handle = data.handle;
+        }
 
-		await Promise.all([
-			db.sortedSetAdd('posts:pid', timestamp, postData.pid),
-			db.incrObjectField('global', 'postCount'),
-			user.onNewPostMade(postData),
-			topics.onNewPostMade(postData),
-			categories.onNewPostMade(topicData.cid, topicData.pinned, postData),
-			groups.onNewPostMade(postData),
-			addReplyTo(postData, timestamp),
-			Posts.uploads.sync(postData.pid),
-		]);
+        let result = await plugins.hooks.fire('filter:post.create', { post: postData, data: data });
+        postData = result.post;
+        await db.setObject(`post:${postData.pid}`, postData);
 
-		result = await plugins.hooks.fire('filter:post.get', { post: postData, uid: data.uid });
-		result.post.isMain = isMain;
-		plugins.hooks.fire('action:post.save', { post: _.clone(result.post) });
-		return result.post;
-	};
+        const topicData = await topics.getTopicFields(tid, ['cid', 'pinned']);
+        postData.cid = topicData.cid;
 
-	async function addReplyTo(postData, timestamp) {
-		if (!postData.toPid) {
-			return;
-		}
-		await Promise.all([
-			db.sortedSetAdd(`pid:${postData.toPid}:replies`, timestamp, postData.pid),
-			db.incrObjectField(`post:${postData.toPid}`, 'replies'),
-		]);
-	}
+        await Promise.all([
+            db.sortedSetAdd('posts:pid', timestamp, postData.pid),
+            db.incrObjectField('global', 'postCount'),
+            user.onNewPostMade(postData),
+            topics.onNewPostMade(postData),
+            categories.onNewPostMade(topicData.cid, topicData.pinned, postData),
+            groups.onNewPostMade(postData),
+            addReplyTo(postData, timestamp),
+            Posts.uploads.sync(postData.pid),
+        ]);
 
-	async function checkToPid(toPid, uid) {
-		const [toPost, canViewToPid] = await Promise.all([
-			Posts.getPostFields(toPid, ['pid', 'deleted']),
-			privileges.posts.can('posts:view_deleted', toPid, uid),
-		]);
-		const toPidExists = !!toPost.pid;
-		if (!toPidExists || (toPost.deleted && !canViewToPid)) {
-			throw new Error('[[error:invalid-pid]]');
-		}
-	}
+        result = await plugins.hooks.fire('filter:post.get', { post: postData, uid: data.uid });
+        result.post.isMain = isMain;
+        plugins.hooks.fire('action:post.save', { post: _.clone(result.post) });
+        return result.post;
+    };
+
+    async function addReplyTo(postData, timestamp) {
+        if (!postData.toPid) {
+            return;
+        }
+        await Promise.all([
+            db.sortedSetAdd(`pid:${postData.toPid}:replies`, timestamp, postData.pid),
+            db.incrObjectField(`post:${postData.toPid}`, 'replies'),
+        ]);
+    }
+
+    async function checkToPid(toPid, uid) {
+        const [toPost, canViewToPid] = await Promise.all([
+            Posts.getPostFields(toPid, ['pid', 'deleted']),
+            privileges.posts.can('posts:view_deleted', toPid, uid),
+        ]);
+        const toPidExists = !!toPost.pid;
+        if (!toPidExists || (toPost.deleted && !canViewToPid)) {
+            throw new Error('[[error:invalid-pid]]');
+        }
+    }
 };
