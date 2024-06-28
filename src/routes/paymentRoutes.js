@@ -44,9 +44,9 @@ router.post('/verify-payment/:uid', async (req, res) => {
 
   if (generated_signature === razorpay_signature) {
     try {
-      const isFreeRole = await groups.isMember('free-role', uid);
+      const isFreeRole = await groups.isMember(uid, 'free-role');
       
-      if (!isFreeRole) {
+      if (isFreeRole) {
         await groups.leave('free-role', uid);
         await groups.join('silver-role', uid);
         winston.info(`[razorpay] User ${uid} upgraded to silver role`);
