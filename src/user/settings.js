@@ -8,6 +8,7 @@ const db = require('../database');
 const plugins = require('../plugins');
 const notifications = require('../notifications');
 const languages = require('../languages');
+const groups = require('../groups');
 
 module.exports = function (User) {
 	const spiderDefaultSettings = {
@@ -49,6 +50,8 @@ module.exports = function (User) {
 		const defaultTopicsPerPage = meta.config.topicsPerPage;
 		const defaultPostsPerPage = meta.config.postsPerPage;
 
+		const isFreeRole = await groups.isMember(uid, 'free-role');
+
 		settings.showemail = parseInt(getSetting(settings, 'showemail', 0), 10) === 1;
 		settings.showfullname = parseInt(getSetting(settings, 'showfullname', 0), 10) === 1;
 		settings.openOutgoingLinksInNewTab = parseInt(getSetting(settings, 'openOutgoingLinksInNewTab', 0), 10) === 1;
@@ -78,6 +81,8 @@ module.exports = function (User) {
 		settings.homePageRoute = validator.escape(String(settings.homePageRoute || '')).replace(/&#x2F;/g, '/');
 		settings.scrollToMyPost = parseInt(getSetting(settings, 'scrollToMyPost', 1), 10) === 1;
 		settings.categoryWatchState = getSetting(settings, 'categoryWatchState', 'notwatching');
+		settings.uid = parseInt(uid, 10);
+		settings.doesBelongToFreeRole = isFreeRole;
 
 		const notificationTypes = await notifications.getAllNotificationTypes();
 		notificationTypes.forEach((notificationType) => {
@@ -148,6 +153,7 @@ module.exports = function (User) {
 			categoryWatchState: data.categoryWatchState,
 			categoryTopicSort: data.categoryTopicSort,
 			topicPostSort: data.topicPostSort,
+			goku: "kamehameha!"
 		};
 		const notificationTypes = await notifications.getAllNotificationTypes();
 		notificationTypes.forEach((notificationType) => {
