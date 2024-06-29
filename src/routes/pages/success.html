@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Success</title>
+  <link rel="stylesheet" href="success.css">
+</head>
+<style>
+    body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .container {
+    text-align: center;
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 1s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .success-message h1 {
+    color: #4caf50;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+  }
+  
+  .success-message p {
+    color: #333;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+  }
+  
+  .animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .checkmark {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .checkmark circle {
+    fill: none;
+    stroke: #4caf50;
+    stroke-width: 4;
+    stroke-dasharray: 226;
+    stroke-dashoffset: 226;
+    animation: stroke 1s ease-in-out forwards;
+  }
+  
+  @keyframes stroke {
+    100% { stroke-dashoffset: 0; }
+  }
+  
+  .checkmark path {
+    fill: none;
+    stroke: #4caf50;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: stroke 1s ease-in-out 0.5s forwards;
+  }
+  
+  .home-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 1em;
+    color: #fff;
+    background: #4caf50;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .home-button:hover {
+    background: #45a049;
+  }
+  
+</style>
+<body>
+  <div class="container">
+    <div class="success-message">
+      <h1>Congratulations!</h1>
+      <p>Your plan has been upgraded to the Silver Plan.</p>
+      <div class="animation">
+        <svg viewBox="0 0 80 80" class="checkmark">
+          <circle cx="40" cy="40" r="36"></circle>
+          <path d="M22 40 l14 14 l22 -22"></path>
+        </svg>
+      </div>
+      <button class="home-button" onclick="window.location.href='/';">Go to Home</button>
+    </div>
+  </div>
+  <script >
+    document.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('.container');
+    container.classList.add('show');
+  });
+  </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ const express = require('express');
 const Razorpay = require('razorpay');
 const router = express.Router();
 const { key_id, key_secret } = require('../razorpayConfig');
+const path = require('path');
 const winston = require('winston');
 const groups = require('../groups'); // Ensure groups module is required correctly
 const crypto = require('crypto');
@@ -36,31 +37,28 @@ router.post('/verify-payment/:uid', async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
   const { uid } = req.params;
 
-  const generated_signature = crypto.createHmac('sha256', key_secret)
+  const generated_signature = require('crypto').createHmac('sha256', key_secret)
     .update(`${razorpay_order_id}|${razorpay_payment_id}`)
     .digest('hex');
 
-  console.log('User ID:', uid);
 
   if (generated_signature === razorpay_signature) {
     try {
       const isFreeRole = await groups.isMember(uid, 'free-role');
-      
       if (isFreeRole) {
         await groups.leave('free-role', uid);
         await groups.join('silver-role', uid);
         winston.info(`[razorpay] User ${uid} upgraded to silver role`);
-        res.redirect('/');
+        res.sendFile(path.join(__dirname, 'pages', 'success.html')); // Send success page
       } else {
-        winston.info(`[razorpay] User ${uid} is not in free role, no role changes made`);
-        res.status(400).send('User is not in free role, no role changes made');
+        res.sendFile(path.join(__dirname, 'pages', 'failure.html')); // Send failure page if user is not in free-role
       }
     } catch (err) {
       winston.error(`[razorpay] Error updating user role: ${err.message}`);
-      res.status(500).send('Error updating user role');
+      res.status(500).send({ status: 'error', message: 'Error updating user role' });
     }
   } else {
-    res.status(400).send('Payment verification failed');
+    res.sendFile(path.join(__dirname, 'pages', 'failure.html')); // Send failure page if verification fails
   }
 });
 
