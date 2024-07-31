@@ -41,7 +41,7 @@ const cors = require('cors');
 
 // Configure CORS options
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:3000', 'https://thepropertyhawk.in'],
   optionsSuccessStatus: 200
 };
 
