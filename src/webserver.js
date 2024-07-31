@@ -37,6 +37,18 @@ const auth = require('./routes/authentication');
 
 const helpers = require('./helpers');
 
+const cors = require('cors');
+
+// Configure CORS options
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  optionsSuccessStatus: 200
+};
+
+// Use the CORS middleware in your NodeBB app
+app.use(cors(corsOptions));
+
+
 if (nconf.get('ssl')) {
 	server = require('https').createServer({
 		key: fs.readFileSync(nconf.get('ssl').key),
