@@ -1,5 +1,8 @@
 # ![NodeBB](public/images/sm-card.png)
 
+## NOTE (IMPORTANT)
+- Move the nodebb-theme-persona folder inside the node_modules folder to the root directory of the project (OVERWRITE).
+
 [![Workflow](https://github.com/NodeBB/NodeBB/actions/workflows/test.yaml/badge.svg)](https://github.com/NodeBB/NodeBB/actions/workflows/test.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/NodeBB/NodeBB/badge.svg?branch=master)](https://coveralls.io/github/NodeBB/NodeBB?branch=master)
 [![Code Climate](https://codeclimate.com/github/NodeBB/NodeBB/badges/gpa.svg)](https://codeclimate.com/github/NodeBB/NodeBB)
